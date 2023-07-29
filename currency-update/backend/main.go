@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type APIResponse struct {
@@ -61,7 +63,7 @@ type APIResponse struct {
 		Egp float64 `json:"EGP"`
 		Ern float64 `json:"ERN"`
 		Etb float64 `json:"ETB"`
-		Eur int     `json:"EUR"`
+		Eur float64 `json:"EUR"`
 		Fjd float64 `json:"FJD"`
 		Fkp float64 `json:"FKP"`
 		Gbp float64 `json:"GBP"`
@@ -194,6 +196,11 @@ func main() {
 
 	fmt.Println("Hello from currency exchanger program ! ")
 	//dbURL := "postgres://root:admin123@db:3306/your_dbname?sslmode=disable"
+	//db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/aitalent")
+	// if err != nil {
+	// 	fmt.Println("db conn failed", err.Error())
+	// }
+
 	exp := "http://api.exchangeratesapi.io/v1/latest?access_key=02b5335542f0861caa327132f0484caa&format=1&base=EUR&symbol=USD,AMD,GBP"
 	//exchangeAPI := "http://api.exchangeratesapi.io/v1/latest?access_key=02b5335542f0861caa327132f0484caa&format=1 &base = GBP & symbols = USD,EUR,GBP"
 	fmt.Println(exp)
@@ -209,30 +216,36 @@ func main() {
 		// handle error
 		fmt.Println("err")
 	}
-	//fmt.Println(string(body))
+	fmt.Println(body)
 	fmt.Println(string(body))
+	fmt.Printf("\n %T \n", body)
 
 	//defer resp.Body.Close()
-	var apiResults []APIResponse
-	if err := json.Unmarshal(body, &apiResults); err != nil {
-		log.Fatal("Failed to parse API response:", err)
+	//apiResults := map[interface]interface{}
+	//var apiResults []APIResponse
+	var apr map[string]interface{}
+	if err := json.Unmarshal([]byte(body), &apr); err != nil {
+		log.Println("Failed to parse API response:", err.Error())
 	}
+	fmt.Println(apr)
+	fmt.Printf("\n %T \n", apr)
 
 	// Insert API results into the SQL database
-	for _, result := range apiResults {
-		if err := insertAPIResult(db, result); err != nil {
-			log.Printf("Failed to insert API result with ID %d: %v", result.Timestamp, err)
-		}
-	}
+	// for _, result := range apr {
+	// 	fmt.Println(result)
+	// 	if err := insertAPIResult(db, result); err != nil {
+	// 		log.Printf("Failed to insert API result with ID %d: %v", result.Timestamp, err)
+	// 	}
+	// }
 	defer resp.Body.Close()
 
 }
 
-func insertAPIResult(db *sql.DB, result APIResponse) error {
-	_, err := db.Exec("INSERT INTO api_results (success, timestamp, base, date, rates) VALUES ($1, $2, $3, $4, $5)",
-		result.Success, result.Timestamp, result.Base, result.Date, result.Rates)
-	return err
-}
+// func insertAPIResult(db *sql.DB, result apr) error {
+// 	_, err := db.Exec("INSERT INTO a_p_i_results (success, timestamp, base, date, rates) VALUES ($1, $2, $3, $4, $5)",
+// 		result.Success, result.Timestamp, result.Base, result.Date, result.Rates)
+// 	return err
+// }
 
 // 	var err error
 // 	db, err = sql.Open("postgres", dbURL)
