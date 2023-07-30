@@ -9,7 +9,7 @@
     <?php
     // Function to fetch exchange rates from the back end API
     function fetchExchangeRates() {
-        $apiUrl = 'http://backend:8080/api/exchange-rates'; // Docker service name "backend" points to the Golang backend
+        $apiUrl = 'http://localhost:8080/getCurrency'; // Docker service name "backend" points to the Golang backend
 
         $ch = curl_init($apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

@@ -2,12 +2,12 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"time"
 
+	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -190,21 +190,28 @@ type APIResponse struct {
 	} `json:"rates"`
 }
 
+// type ExpectResponse struct {
+// 	USD float64 `json:"USD"`
+// 	EUR float64 `json:"EUR"`
+// 	GBP float64 `json:"GBP"`
+// }
+type ExchangeRate struct {
+	ID       int       `json:"id"`
+	Currency string    `json:"currency"`
+	Rate     float64   `json:"rate"`
+	Date     time.Time `json:"date"`
+}
+
 var db *sql.DB
+var apr map[string]any
 
 func main() {
-
-	fmt.Println("Hello from currency exchanger program ! ")
-	//dbURL := "postgres://root:admin123@db:3306/your_dbname?sslmode=disable"
-	//db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/aitalent")
-	// if err != nil {
-	// 	fmt.Println("db conn failed", err.Error())
-	// }
-
+	r := gin.Default()
+	r.GET("/getCurrency", getCurrency)
+	r.Run("localhost:8080")
+}
+func getCurrency(c *gin.Context) {
 	exp := "http://api.exchangeratesapi.io/v1/latest?access_key=02b5335542f0861caa327132f0484caa&format=1&base=EUR&symbol=USD,AMD,GBP"
-	//exchangeAPI := "http://api.exchangeratesapi.io/v1/latest?access_key=02b5335542f0861caa327132f0484caa&format=1 &base = GBP & symbols = USD,EUR,GBP"
-	fmt.Println(exp)
-
 	resp, err := http.Get(exp)
 	if err != nil {
 		// handle error
@@ -214,38 +221,30 @@ func main() {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		// handle error
-		fmt.Println("err")
+		fmt.Println("err", err.Error())
 	}
-	fmt.Println(body)
+	//fmt.Println(body)
 	fmt.Println(string(body))
-	fmt.Printf("\n %T \n", body)
 
-	//defer resp.Body.Close()
-	//apiResults := map[interface]interface{}
-	//var apiResults []APIResponse
-	var apr map[string]interface{}
-	if err := json.Unmarshal([]byte(body), &apr); err != nil {
-		log.Println("Failed to parse API response:", err.Error())
-	}
-	fmt.Println(apr)
-	fmt.Printf("\n %T \n", apr)
-
-	// Insert API results into the SQL database
-	// for _, result := range apr {
-	// 	fmt.Println(result)
-	// 	if err := insertAPIResult(db, result); err != nil {
-	// 		log.Printf("Failed to insert API result with ID %d: %v", result.Timestamp, err)
-	// 	}
+	// var respo APIResponse
+	// json.NewDecoder(resp.Body).Decode(respo)
+	// fmt.Println(respo)
+	// for _, result := range APIResponse {} //fmt.Println(result)
+	// if err := insertAPIResult(db, result); err != nil {
+	// 	log.Printf("Failed to insert API result with ID %d: %v", result.Timestamp, err)
 	// }
-	defer resp.Body.Close()
 
+	//fmt.Println("New struct value ", respo)
+	c.JSON(http.StatusOK, string(body))
+	defer resp.Body.Close()
+	return
 }
 
-// func insertAPIResult(db *sql.DB, result apr) error {
-// 	_, err := db.Exec("INSERT INTO a_p_i_results (success, timestamp, base, date, rates) VALUES ($1, $2, $3, $4, $5)",
-// 		result.Success, result.Timestamp, result.Base, result.Date, result.Rates)
-// 	return err
-// }
+func insertAPIResult(db *sql.DB, result APIResponse) error {
+	_, err := db.Exec("INSERT INTO a_p_i_results (success, timestamp, base, date, rates) VALUES ($1, $2, $3, $4, $5)",
+		result.Success, result.Timestamp, result.Base, result.Date, result.Rates)
+	return err
+}
 
 // 	var err error
 // 	db, err = sql.Open("postgres", dbURL)
@@ -293,4 +292,36 @@ func main() {
 // 	}
 
 // 	return rates, nil
+// }
+
+//fmt.Println("Hello from currency exchanger program ! ")
+//dbURL := "postgres://root:admin123@db:3306/your_dbname?sslmode=disable"
+//db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/aitalent")
+// if err != nil {
+// 	fmt.Println("db conn failed", err.Error())
+// }
+
+//exp := "http://api.exchangeratesapi.io/v1/latest?access_key=02b5335542f0861caa327132f0484caa&format=1&base=EUR&symbol=USD,AMD,GBP"
+//exchangeAPI := "http://api.exchangeratesapi.io/v1/latest?access_key=02b5335542f0861caa327132f0484caa&format=1 &base = GBP & symbols = USD,EUR,GBP"
+//fmt.Println(exp)
+
+//fmt.Printf("\n %T \n", body)
+
+//defer resp.Body.Close()
+//apiResults := map[interface]interface{}
+//var apiResults []APIResponse
+//var apr map[string]interface{}
+// if err := json.Unmarshal([]byte(body), &apr); err != nil {
+// 	log.Println("Failed to parse API response txt error  :", err.Error())
+// }
+// fmt.Println(apr)
+// fmt.Printf("\n %T \n", apiResults)
+// fmt.Printf("\n %T \n", apr)
+
+// Insert API results into the SQL database
+// for _, result := range apr {
+// 	fmt.Println(result)
+// 	if err := insertAPIResult(db, result); err != nil {
+// 		log.Printf("Failed to insert API result with ID %d: %v", result.Timestamp, err)
+// 	}
 // }
